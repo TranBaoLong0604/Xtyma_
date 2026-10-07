@@ -1,0 +1,32 @@
+{
+  "name": "xtyma_",
+  "version": "1.0.0",
+  "description": "Xtyma_ là hệ thống quản lý và theo dõi quá trình học tập,được xây dựng nhằm kết nối giáo viên và học sinh trên một nền tảng.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TranBaoLong0604/Xtyma_.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/TranBaoLong0604/Xtyma_/issues"
+  },
+  "homepage": "https://github.com/TranBaoLong0604/Xtyma_#readme",
+  "dependencies": {
+    "fastify": "^5.12.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
