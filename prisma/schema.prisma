@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  username      String   @unique @db.VarChar(50)
+  email         String   @unique @db.VarChar(255)
+  emailVerified Boolean  @default(false) @map("email_verified")
+  passwordHash  String   @map("password_hash") @db.VarChar(255)
+  role          String   @db.VarChar(20)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  student Student?
+  teacher Teacher?
+
+  @@map("users")
+}
+
+model Student {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @unique @map("user_id") @db.Uuid
+  studentCode  String    @unique @map("student_code") @db.VarChar(50)
+  fullName     String    @map("full_name") @db.VarChar(150)
+  dateOfBirth  DateTime? @map("date_of_birth") @db.Date
+  gender       String?   @db.VarChar(20)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  user        User          @relation(fields: [userId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+enrollments   Enrollment[]
+grades        Grade[]
+attendances   Attendance[]
+goals         Goal[]
+examTargets   ExamTarget[]
+
+
+  @@map("students")
+}
+
+model Teacher {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @map("user_id") @db.Uuid
+  teacherCode String   @unique @map("teacher_code") @db.VarChar(50)
+  fullName    String   @map("full_name") @db.VarChar(150)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user              User           @relation(fields: [userId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+  homeroomClasses Class[]
+classSubjects   ClassSubject[]
+
+  @@map("teachers")
+}
+
+model AcademicYear {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique @db.VarChar(20)
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  classes Class[]
+
+  @@map("academic_years")
+}
+
+model Class {
+  id               String   @id @default(uuid()) @db.Uuid
+  academicYearId   String   @map("academic_year_id") @db.Uuid
+  name             String   @db.VarChar(50)
+  gradeLevel       Int      @map("grade_level") @db.SmallInt
+  homeroomTeacherId String?  @map("homeroom_teacher_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  academicYear    AcademicYear  @relation(fields: [academicYearId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+  homeroomTeacher Teacher?      @relation(fields: [homeroomTeacherId], references: [id], onUpdate: Restrict, onDelete: SetNull)
+  enrollments   Enrollment[]
+classSubjects ClassSubject[]
+
+  @@unique([academicYearId, name])
+  @@map("classes")
+}
+
+model Enrollment {
+  id        String   @id @default(uuid()) @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  classId   String   @map("class_id") @db.Uuid
+  joinedAt  DateTime @map("joined_at") @db.Date
+  leftAt    DateTime? @map("left_at") @db.Date
+  createdAt DateTime @default(now()) @map("created_at")
+
+  student Student @relation(fields: [studentId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+  class   Class   @relation(fields: [classId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+
+  @@index([studentId])
+  @@index([classId])
+  @@map("enrollments")
+}
+
+model Subject {
+  id        String   @id @default(uuid()) @db.Uuid
+  code      String   @unique @db.VarChar(20)
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+classSubjects      ClassSubject[]
+goals              Goal[]
+examGroupSubjects  ExamGroupSubject[]
+
+  @@map("subjects")
+}
+
+model ClassSubject {
+  id        String   @id @default(uuid()) @db.Uuid
+  classId   String   @map("class_id") @db.Uuid
+  subjectId String   @map("subject_id") @db.Uuid
+  teacherId String   @map("teacher_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  class   Class   @relation(fields: [classId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+  subject Subject @relation(fields: [subjectId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+  teacher Teacher @relation(fields: [teacherId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+
+  grades   Grade[]
+  sessions ClassSession[]
+
+  @@unique([classId, subjectId])
+  @@map("class_subjects")
+}
+
+model Grade {
+  id             String   @id @default(uuid()) @db.Uuid
+  studentId      String   @map("student_id") @db.Uuid
+  classSubjectId String   @map("class_subject_id") @db.Uuid
+  assessmentType String   @map("assessment_type") @db.VarChar(20)
+  score          Decimal  @db.Decimal(4, 2)
+  assessmentDate DateTime @map("assessment_date") @db.Date
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  student      Student     @relation(fields: [studentId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+  classSubject ClassSubject @relation(fields: [classSubjectId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+
+  @@index([studentId])
+  @@index([classSubjectId])
+  @@index([classSubjectId, assessmentDate])
+  @@map("grades")
+}
+
+model ClassSession {
+  id             String   @id @default(uuid()) @db.Uuid
+  classSubjectId String   @map("class_subject_id") @db.Uuid
+  sessionDate    DateTime @map("session_date") @db.Date
+  startTime      DateTime @map("start_time") @db.Time(0)
+  endTime        DateTime @map("end_time") @db.Time(0)
+  status         String   @db.VarChar(20)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  classSubject ClassSubject @relation(fields: [classSubjectId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+  attendances  Attendance[]
+
+  @@index([classSubjectId])
+  @@index([classSubjectId, sessionDate])
+  @@map("class_sessions")
+}
+
+model Attendance {
+  id            String   @id @default(uuid()) @db.Uuid
+  classSessionId String   @map("class_session_id") @db.Uuid
+  studentId     String   @map("student_id") @db.Uuid
+  status        String   @db.VarChar(20)
+  note          String?  @db.VarChar(500)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  classSession ClassSession @relation(fields: [classSessionId], references: [id], onUpdate: Restrict, onDelete: Cascade)
+  student      Student      @relation(fields: [studentId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+
+  @@unique([classSessionId, studentId])
+  @@map("attendances")
+}
+
+model Goal {
+  id          String    @id @default(uuid()) @db.Uuid
+  studentId   String    @map("student_id") @db.Uuid
+  subjectId   String    @map("subject_id") @db.Uuid
+  title       String    @db.VarChar(200)
+  targetValue Decimal   @map("target_value") @db.Decimal(4, 2)
+  deadline    DateTime? @db.Date
+  status      String    @db.VarChar(20)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  student Student @relation(fields: [studentId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+  subject Subject @relation(fields: [subjectId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+
+  @@index([studentId])
+  @@index([subjectId])
+  @@map("goals")
+}
+
+model ExamGroup {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique @db.VarChar(20)
+  name        String   @db.VarChar(100)
+  description String?
+
+  subjects ExamGroupSubject[]
+  targets  ExamTarget[]
+
+  @@map("exam_groups")
+}
+
+model ExamGroupSubject {
+  id          String @id @default(uuid()) @db.Uuid
+  examGroupId String @map("exam_group_id") @db.Uuid
+  subjectId   String @map("subject_id") @db.Uuid
+
+  examGroup ExamGroup @relation(fields: [examGroupId], references: [id], onUpdate: Restrict, onDelete: Cascade)
+  subject   Subject   @relation(fields: [subjectId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+
+  @@unique([examGroupId, subjectId])
+  @@map("exam_group_subjects")
+}
+
+model ExamTarget {
+  id           String    @id @default(uuid()) @db.Uuid
+  studentId    String    @map("student_id") @db.Uuid
+  examGroupId  String    @map("exam_group_id") @db.Uuid
+  targetScore  Decimal   @map("target_score") @db.Decimal(5, 2)
+  examDate     DateTime? @map("exam_date") @db.Date
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  student   Student   @relation(fields: [studentId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+  examGroup ExamGroup @relation(fields: [examGroupId], references: [id], onUpdate: Restrict, onDelete: Restrict)
+
+  @@index([studentId])
+  @@index([examGroupId])
+  @@map("exam_targets")
+}
