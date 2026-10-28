@@ -1,4 +1,6 @@
-
+import { authenticate } from "../middleware/authenticate";
+import { authorize } from "../middleware/authorize";
+import { getStudentByUserId } from "../services/students.service";
 import type { FastifyInstance } from "fastify";
 import {
   createStudentSchema,
@@ -13,11 +15,44 @@ import {
 } from "../services/students.service";
 
 export async function studentRoutes(app: FastifyInstance) {
-  app.get("/api/students", async () => {
-    return getStudents();
-  });
 
-  app.get("/api/students/:id", async (request, reply) => {
+app.get(
+  "/api/students",
+  {
+    preHandler: [
+      authenticate,
+      authorize("ADMIN"),
+    ],
+  },
+  async () => {
+    return getStudents();
+  },
+);
+
+app.get(
+  "/api/students/:id",
+  { preHandler: authenticate },
+  async (request, reply) => {
+    const user = request.user as { sub: string; role: string };
+
+    if (user.role === "STUDENT") {
+      const student = await getStudentByUserId(user.sub);
+
+      if (!student) {
+        return reply.code(404).send({
+          error: "Không tìm thấy hồ sơ học sinh",
+        });
+      }
+
+      return reply.send({ student });
+    }
+
+    if (user.role !== "ADMIN") {
+      return reply.code(403).send({
+        error: "Bạn không có quyền xem hồ sơ này",
+      });
+    }
+
     const parsedParams = studentIdSchema.safeParse(request.params);
 
     if (!parsedParams.success) {
@@ -35,9 +70,19 @@ export async function studentRoutes(app: FastifyInstance) {
     }
 
     return reply.send({ student });
-  });
+  },
+);
 
-  app.post("/api/students", async (request, reply) => {
+
+  app.post(
+  "/api/students",
+  {
+    preHandler: [
+      authenticate,
+      authorize("ADMIN"),
+    ],
+  },
+  async (request, reply) => {
     const parsed = createStudentSchema.safeParse(request.body);
 
     if (!parsed.success) {
@@ -66,8 +111,16 @@ export async function studentRoutes(app: FastifyInstance) {
       student: result.student,
     });
   });
+  app.put(
+  "/api/students/:id",
+  {
+    preHandler: [
+      authenticate,
+      authorize("ADMIN"),
+    ],
+  },
+  async (request, reply) => {
 
-  app.put("/api/students/:id", async (request, reply) => {
     const parsedParams = studentIdSchema.safeParse(request.params);
 
     if (!parsedParams.success) {

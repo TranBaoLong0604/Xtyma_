@@ -1,12 +1,23 @@
 
+import "dotenv/config";
+import fastifyJwt from "@fastify/jwt";
 import Fastify from "fastify";
-import bcrypt from "bcryptjs";
-import { z } from "zod";
 import { prisma } from "./lib/prisma";
 import { studentRoutes } from "./routes/students.routes";
+import { authRoutes } from "./routes/auth.routes";
 const app = Fastify({
   logger: true,
 });
+
+app.register(fastifyJwt, {
+  secret: process.env.JWT_SECRET!,
+  sign: {
+    expiresIn: "1h",
+  },
+});
+
+app.register(authRoutes);
+
 app.register(studentRoutes);
 
 app.get("/", async () => {

@@ -34,6 +34,20 @@ export async function getStudentById(id: string) {
   });
 }
 
+export async function getStudentByUserId(userId: string) {
+  return prisma.student.findUnique({
+    where: { userId },
+    select: {
+      id: true,
+      studentCode: true,
+      fullName: true,
+      dateOfBirth: true,
+      gender: true,
+    },
+  });
+}
+
+
 export async function createStudent(data: {
   username: string;
   email: string;
