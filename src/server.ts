@@ -9,8 +9,14 @@ const app = Fastify({
   logger: true,
 });
 
+const jwtSecret = process.env.JWT_SECRET;
+
+if (!jwtSecret || jwtSecret.length < 32) {
+  throw new Error("JWT_SECRET phải có ít nhất 32 ký tự");
+}
+
 app.register(fastifyJwt, {
-  secret: process.env.JWT_SECRET!,
+  secret: jwtSecret,
   sign: {
     expiresIn: "1h",
   },
